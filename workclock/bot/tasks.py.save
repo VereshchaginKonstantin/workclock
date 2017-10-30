@@ -1,0 +1,102 @@
+# -*- coding: utf-8 -*-
+from celery.decorators import task
+import telebot
+from celery.task.schedules import crontab
+from celery.decorators import periodic_task
+import json
+import hashlib
+import hmac
+import requests
+from time import sleep, time
+from datetime import datetime, timedelta, date
+from .models import *
+import requests
+from django.utils.translation import ugettext as _
+from django.utils.translation import activate
+import re
+from django.db.models import Count, Min, Sum, Avg
+from . groupLogic import *
+
+@periodic_task(run_every=crontab(minute='0, 25, 26, 27, 29, 30, 32, 33,36,37,38,39,40,42,43'))
+def every_minute():
+	try:
+		bot = telebot.TeleBot('475168535:AAGBZZCxRdoDvsqjk0nXOy1gprdQHgyuUmo') #prod
+		bot.send_message(213974204, 'celery work')	
+	except:
+		
+		
+
+@periodic_task(run_every=crontab(minute='0', hour='15,16,17,18,19,20'))
+def every_hour():
+	try:
+		
+		bot = telebot.TeleBot('475168535:AAGBZZCxRdoDvsqjk0nXOy1gprdQHgyuUmo') #prod
+		d = datetime.today().date()
+		dtime = datetime.today() 
+		
+		mes = "Пора домой: "
+		mes_ = ""
+		for workclock in WorkClock.objects.filter(day=d, is_exit = False):
+			try:
+				guser = workclock.guser
+				mes_ += "- %s\n" % guser.GetDisplayName()
+
+				if dtime.hour == 23:
+					t = rount(time())
+					workclock.is_exit = True
+					workclock.last_exit = t
+					workclock.seconds += workclock.last_exit - workclock.last_enter
+					workclock.save()
+
+					try:
+						bot.send_message(guser.user_id , "У вас пошла переработка, если вы не хотите отдыхать и полны сил, тогда все ок, если забыли написать в общий чат, что ушли, то сделайте это.", parse_mode = "Markdown")
+						bot.send_message(guser.group.group_id, mes + mes_, parse_mode = "Markdown")
+					except:
+						pass
+
+			except Exception as e:
+				print(e)
+				bot.send_message(354691583, str(e))
+		quit()
+
+	except Exception as e:
+		print(e)
+		bot.send_message(213974204, str(e))
+	
+
+
+@periodic_task(run_every=crontab(minute='0', hour='18', day_of_week='fri'))
+def every_friday():
+	try:
+		
+		bot = telebot.TeleBot('475168535:AAGBZZCxRdoDvsqjk0nXOy1gprdQHgyuUmo') #prod
+
+		mes = "*Статистика за неделю:*\n"
+		for group in group.objects.all():
+			for guser in groupUser.objects.filter(group = group):
+				dweek = d.weekday()
+
+				d_start = d - timedelta(days = 6)
+
+				seconds = WorkClock.objects.filter(guser = guser, day__gte = d_start, day__lte = d).aggregate(Sum('seconds'))['seconds__sum']
+				if seconds is None:
+					seconds = 0
+				work_h = seconds // 3600
+				work_m = (seconds - work_h*3600) // 60
+				work_s = seconds - work_h*3600 - work_m*60
+
+				mes += "*%s*: %dч. %d мин. %d сек.\n" % (name, work_h, work_m, work_s)
+		
+			bot.send_message(group.group_id, mes, parse_mode = "Markdown")
+		return HttpResponse('OK')
+
+		quit()
+
+	except Exception as e:
+		print(e)
+		bot.send_message(213974204, str(e))
+
+
+
+
+

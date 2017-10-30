@@ -30,10 +30,10 @@ class groupUser(models.Model):
 
 	def GetDisplayName(self) :
 		if self.username == "":
-			name = self.fio
+			name = self.fio.encode('utf8')
 		else:
 			name = self.username
-		return name.encode('utf8')
+		return name
 
 	def __str__(self):
 		return 'id = ' + str(self.id) + " " + self.fio + " " + self.username
@@ -63,8 +63,8 @@ class Lightning(models.Model):
 	
 class Journal(models.Model):
 	user = models.ForeignKey(groupUser, null=True, blank = True)
-	date_in 		= models.DateTimeField(auto_now_add = True, auto_now = False, null=True, blank = True)
-	date_out 		= models.DateTimeField(auto_now_add = True, auto_now = False, null=True, blank = True)
+	date_in 		= models.DateTimeField(null=True, blank = True)
+	date_out 		= models.DateTimeField(null=True, blank = True)
 	workclock 		= models.ForeignKey(WorkClock, null=True, blank = True)
 	
 	class Meta:

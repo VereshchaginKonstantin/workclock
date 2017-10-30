@@ -17,7 +17,7 @@ import re
 from django.db.models import Count, Min, Sum, Avg
 from . groupLogic import *
 
-@periodic_task(run_every=crontab(minute='7'))
+@periodic_task(run_every=crontab(minute='7,14'))
 def every_hour():
 	try:
 		now = timezone.now()

@@ -149,7 +149,7 @@ class Reports:
 			work_h = seconds // 3600
 			work_m = (seconds - work_h*3600) // 60
 			work_s = seconds - work_h*3600 - work_m*60
-			mes += " Отработал: %dч. %d мин. %d сек..\n" % (work_h, work_m, work_s)		
+			mes += " Отработал: {} ч. {} мин. {} сек..\n".format(work_h, work_m, work_s)		
 		self._botInternal.send_message(group.group_id, mes, parse_mode = "Markdown", reply_to_message_id = gfrom_message_id)
 	
 	def Stat(self, group):
@@ -169,13 +169,13 @@ class Reports:
 			work_s = seconds - work_h*3600 - work_m*60
 			
 			if not IsUserBot(guser):
-				mes += "*%s*, работал: %dч. %d мин. %d сек. " % (guser.GetDisplayName(), work_h, work_m, work_s)
+				mes +=  "*{}*, работал: {} ч. {} мин. {} сек. ".format(guser.GetDisplayName(), work_h, work_m, work_s)
 				lightcurr = Lightning.objects.filter(user = guser).first()
 				if not lightcurr is None:
 					count1 = lightcurr.count
 				else:
 					count1 = 0
-				mes += "Молнии: %d.\n" % count1
+				mes += "Молнии: *{}*.\n".format(count1)
 					
 		self._botInternal.send_message(group.group_id, mes, parse_mode = "Markdown")
 	
@@ -188,7 +188,7 @@ class Reports:
 			for user in groupUser.objects.filter(group=group1):
 				if  WorkClock.objects.filter(user = user, day=d, is_exit = False).exists():
 					try:
-						mes_ += "- %s\n" % user.GetDisplayName()
+						mes_ += "- {}\n".format(user.GetDisplayName()) 
 						try:
 							self._botInternal.send_message(user.user_id , "У вас пошла переработка, если вы не хотите отдыхать и полны сил, тогда все ок, если забыли написать в общий чат, что ушли, то сделайте это. Группа - {}".format(group1.group_name),  parse_mode = "Markdown")
 							
@@ -214,7 +214,7 @@ class Reports:
 				work_s = seconds - work_h*3600 - work_m*60
   
 				if not IsUserBot(guser):
-					mes += "*%s*, работал: %dч. %d мин. %d сек. " % (guser.GetDisplayName(), work_h, work_m, work_s)
+					mes += "*{}*, работал: {} ч. {} мин. {} сек. ".format(guser.GetDisplayName(), work_h, work_m, work_s)
 					lightcurr = Lightning.objects.filter(user = guser).first()
 					if not lightcurr is None:
 						count1 = lightcurr.count
@@ -245,11 +245,11 @@ class BotEngineGroup:
 		self._botInternal.send_message(group.group_id, message)
 
 	def HiToUser (self, group, user) :
-		self._botInternal.send_message(group.group_id, "Привет, *%s*.\nЯ бот Валера, буду следить за тем, когда ты пришел и ушел с работы. Надеюсь, мы подружимся;)\n*Добро пожаловать!*" % user.fio, parse_mode = "Markdown")
+		self._botInternal.send_message(group.group_id, "Привет, *{}*.\nЯ бот Валера, буду следить за тем, когда ты пришел и ушел с работы. Надеюсь, мы подружимся;)\n*Добро пожаловать!*".format(user.GetDisplayName()), parse_mode = "Markdown")
 		return HttpResponse('OK')
    
 	def SendGoodBuy (self, group, user) :  	
-		self._botInternal.send_message(group.group_id, "Пока, *%s*.\nНадеюсь мы еще увидимся...Буду скучать..." % user.fio, parse_mode = "Markdown")
+		self._botInternal.send_message(group.group_id, "Пока, *{}*.\nНадеюсь мы еще увидимся...Буду скучать...".format(user.GetDisplayName()), parse_mode = "Markdown")
 		return HttpResponse('OK')
 	def Coffe(self, group, user, light, gfrom_message_id) :
 		dateNow = timezone.now().date()
@@ -267,7 +267,7 @@ class BotEngineGroup:
 	def GetLight(self, group, light, gfrom_message_id) :
 		light.count = light.count + 1
 		light.save()
-		self._botInternal.send_message(group.group_id, "Сегодня ты заработал еще одну молнию. Всего молний *%d*." % light.count, parse_mode = "Markdown", reply_to_message_id = gfrom_message_id)
+		self._botInternal.send_message(group.group_id, "Сегодня ты заработал еще одну молнию. Всего молний *{}*.".format(light.count) , parse_mode = "Markdown", reply_to_message_id = gfrom_message_id)
 		return HttpResponse('OK')
 
 	def Here(self, group, user, light, workclock, gfrom_message_id) :
@@ -283,21 +283,21 @@ class BotEngineGroup:
 			journal.workclock = workclock
 			journal.save()
 			
-			self._botInternal.send_message(group.group_id, "Привет, *%s*.\nХорошего рабочего дня!" % user.GetDisplayName(), parse_mode = "Markdown", reply_to_message_id = gfrom_message_id)
+			self._botInternal.send_message(group.group_id, "Привет, *{}*.\nХорошего рабочего дня!".format(user.GetDisplayName()) , parse_mode = "Markdown", reply_to_message_id = gfrom_message_id)
 			if now.hour > 8:
 				light.count = light.count + 1
 				light.save()
-				self._botInternal.send_message(group.group_id, "Сегодня ты заработал еще одну молнию. Всего молний *%d*." % light.count, parse_mode = "Markdown", reply_to_message_id = gfrom_message_id)
+				self._botInternal.send_message(group.group_id, "Сегодня ты заработал еще одну молнию. Всего молний *{}*.".format(light.count), parse_mode = "Markdown", reply_to_message_id = gfrom_message_id)
 			else:
 				light.count = light.count - 1
 				if light.count < 0:
 					light.count = 0
 				light.save()
-				self._botInternal.send_message(group.group_id, "Сегодня ты снял еще одну молнию. Всего молний *%d*." % light.count, parse_mode = "Markdown", reply_to_message_id = gfrom_message_id)
+				self._botInternal.send_message(group.group_id, "Сегодня ты снял еще одну молнию. Всего молний *{}*.".format(light.count) , parse_mode = "Markdown", reply_to_message_id = gfrom_message_id)
 		elif workclock.is_exit:
 			workclock.last_enter = t
 			workclock.is_exit = False
-			self._botInternal.send_message(group.group_id, "*%s*, хорошего продолжения рабочего дня!" % user.GetDisplayName(), parse_mode = "Markdown", reply_to_message_id = gfrom_message_id)
+			self._botInternal.send_message(group.group_id, "*{}*, хорошего продолжения рабочего дня!".format(user.GetDisplayName()), parse_mode = "Markdown", reply_to_message_id = gfrom_message_id)
 		workclock.save()
 		return HttpResponse('OK')
 		
@@ -319,7 +319,7 @@ class BotEngineGroup:
 			work_m = (workclock.seconds - work_h*3600) // 60
 			work_s = workclock.seconds - work_h*3600 - work_m*60
 
-			self._botInternal.send_message(group.group_id, "Пока, *%s*.\nВремя работы: %dч. %d мин. %d сек.\n" % (user.GetDisplayName(), work_h, work_m, work_s), parse_mode = "Markdown", reply_to_message_id = gfrom_message_id)
+			self._botInternal.send_message(group.group_id, "Пока, *{}*.\nВремя работы: {}ч. {} мин. {} сек.\n".format(user.GetDisplayName(), work_h, work_m, work_s), parse_mode = "Markdown", reply_to_message_id = gfrom_message_id)
 		return HttpResponse('OK')
 		
 		

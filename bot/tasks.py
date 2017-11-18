@@ -17,15 +17,52 @@ import re
 from django.db.models import Count, Min, Sum, Avg
 from . groupLogic import *
 
-@periodic_task(run_every=crontab(minute='7,14'))
-def every_hour():
+@periodic_task(run_every=crontab(minute='0'))
+def every_hour_sendLight():
 	try:
-		now = timezone.now()
+		
 		bot = telebot.TeleBot('475168535:AAGBZZCxRdoDvsqjk0nXOy1gprdQHgyuUmo') #prod
-		if now.hour > 18: 
+		helper = DataHelper()
+		now = helper.GetNow()
+		
+		dweek = now.weekday() 
+		bot.send_message(213974204, dweek)
+		if now.hour == 9 and dweek < 5:		
 			report = Reports()
 			report.SetBot(bot) 
-			report.OverWorking()
+			report.SendLight()
+	except Exception as e:
+		print(e)
+		bot.send_message(213974204, str(e))
+	
+@periodic_task(run_every=crontab(minute='0'))
+def every_hour_SendLightPrivate():
+	try:
+		
+		bot = telebot.TeleBot('475168535:AAGBZZCxRdoDvsqjk0nXOy1gprdQHgyuUmo') #prod
+		helper = DataHelper()
+		now = helper.GetNow()
+		
+		dweek = now.weekday()
+		if now.hour == 8 and dweek < 5:		
+			report = Reports()
+			report.SetBot(bot) 
+			report.SendLightPrivate()
+	except Exception as e:
+		print(e)
+		bot.send_message(213974204, str(e))	
+
+@periodic_task(run_every=crontab(minute='2'))
+def every_hour_sendOverWork():
+	try:
+		helper = DataHelper()
+		now = helper.GetNow()
+		bot = telebot.TeleBot('475168535:AAGBZZCxRdoDvsqjk0nXOy1gprdQHgyuUmo') #prod
+		
+		if now.hour > 17: 
+			report = Reports()
+			report.SetBot(bot) 
+			report.OverWorkingPrivate()
 	except Exception as e:
 		print(e)
 		bot.send_message(213974204, str(e))
@@ -33,11 +70,10 @@ def every_hour():
 @periodic_task(run_every=crontab(minute='0', hour='18', day_of_week='fri'))
 def every_friday():
 	try:
-		
 		bot = telebot.TeleBot('475168535:AAGBZZCxRdoDvsqjk0nXOy1gprdQHgyuUmo') #prod
 		report = Reports()
 		report.SetBot(bot) 
-		report.reportWeeklyReport() 
+		report.WeeklyReport() 
 	except Exception as e:
 		print(e)
 		bot.send_message(213974204, str(e))

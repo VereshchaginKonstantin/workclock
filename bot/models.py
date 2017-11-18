@@ -15,6 +15,8 @@ class group(models.Model):
 
 class groupUser(models.Model):
 	user_id 		= models.BigIntegerField()
+	start_hour = models.IntegerField(default = 9)
+	start_minute = models.IntegerField(default = 0)
 	group 			= models.ForeignKey(group, null=True, blank = True) 
 	step			= models.CharField(max_length=50, null=True, blank = True)
 	username 		= models.CharField(max_length=120, null=True, blank = True)
@@ -34,6 +36,9 @@ class groupUser(models.Model):
 		else:
 			name = self.username
 		return name
+
+	def IsBot(self) :
+		return self.GetDisplayName() == 'WorkingStatisticBot'
 
 	def __str__(self):
 		return 'id = ' + str(self.id) + " " + self.fio + " " + self.username
@@ -60,6 +65,14 @@ class Lightning(models.Model):
 	class Meta:
 		verbose_name 		= 'Lightning'
 		verbose_name_plural = 'Lightning'
+	
+class Otpros(models.Model):
+	user = models.ForeignKey(groupUser, null=True, blank = True)
+	date_in 	= models.DateTimeField(null=True, blank = True)
+	
+	class Meta:
+		verbose_name 		= 'Otpros'
+		verbose_name_plural = 'Otproses'	
 	
 class Journal(models.Model):
 	user = models.ForeignKey(groupUser, null=True, blank = True)

@@ -24,7 +24,8 @@ from django.utils.translation import activate
 from django.db.models import Count, Min, Sum, Avg
 from django.utils import timezone  
 import locale 
-  
+from dateutil.parser import parse
+ 
 def IsUserBot(user):
 	return user.GetDisplayName() == 'WorkingStatisticBot'
 
@@ -179,13 +180,36 @@ class Reports:
 		dd = 4
 		#d = feedparser.parse('https://news.yandex.ru/science.rss')
 		#randomNews = random.randint(0, len(d.entries) - 1)
-		#news = d.entries[randomNews]
+		#news f= d.entries[randomNews]
 		#for group1 in group.objects.all():	
 		#if user_id is None:
 		#		self._botInternal.send_message(group1.group_id, news.description, parse_mode = "Markdown")
 		#	else:
 		#		self._botInternal.send_message(user_id, news.description, parse_mode = "Markdown")
 
+
+	def SendEvent(self):
+		d = timezone.now()
+		for event in Event.objects.all():
+			yearNow = d.year
+			dateEvent = event.date_event.replace(year = yearNow)
+			tdelta = dateEvent - d
+			daysRest = tdelta.days
+			if daysRest == 1 or daysRest == 8:
+				for user in groupUser.objects.all():
+					if user.group == event.user.group:
+						if user != event.user:
+							try:
+								self._botInternal.send_message(user.user_id, '{} - {} - {}'.format(event.user.GetDisplayName(), event.date_event , event.eventMessage.encode('utf8')) , parse_mode = "Markdown")
+							except Exception as e:
+								self._botInternal.send_message(213974204, str(e))
+		
+	def SendUserId(self, userG):
+		for user in groupUser.objects.all():
+			if user.group == userG.group:
+				self._botInternal.send_message(userG.user_id, "{} - {}".format(user.GetDisplayName(), user.id), parse_mode = "Markdown")
+
+	
 	def SendLight(self, user_id = None):
 		d = timezone.now().date()  
 		mes = "МОЛНИИ!!!"
@@ -243,8 +267,10 @@ class Reports:
 			seconds = journalEntry.workclock.seconds
 			if seconds is None:
 				seconds = 0
-			work_m = seconds // 60
-			mes += " {} мин.\n".format(work_m)		
+			seconds -= 45 * 60
+			work_h = seconds // 3600
+			work_m = (seconds - work_h*3600) // 60
+			mes += " *{}ч.{}м.*\n".format(work_h, work_m)		
 		try:
 			self._botInternal.send_message(user.user_id, mes, parse_mode = "Markdown")
 		except Exception as e:
@@ -355,7 +381,21 @@ class Reports:
 			mes +=  " *{}*, работал: {}:{}:{}. \n".format(info.guser.GetDisplayName(), work_h, work_m, work_s)
 		self._botInternal.send_message(group.group_id, mes, parse_mode = "Markdown")
 
-
+	def WhoIsThere(self, group):
+		d = timezone.now().date()  
+		mes = " "
+		for user in groupUser.objects.filter(group=group):
+			if  WorkClock.objects.filter(user = user, day=d, is_exit = False, is_enter = True).exists():
+				place = WorkClock.objects.filter(user = user, day=d, is_exit = False, is_enter = True).first().currentLocation
+				mes += "*{}*, находится *{}* \n".format(user.GetDisplayName(), place.encode('utf8'))
+		try:
+			if mes == " ":
+				self._botInternal.send_message(group.group_id, 'Никого нет', parse_mode = "Markdown")
+			else:
+				self._botInternal.send_message(group.group_id, mes, parse_mode = "Markdown")
+		except Exception as e:
+			self._botInternal.send_message(213974204, str(e)) 
+		
 	def OverWorkingPrivate(self):
 		mesError = "Не могу достучаться до {}. Пусть свяжется со мной в личке."
 		d = timezone.now().date()  
@@ -366,11 +406,11 @@ class Reports:
 				if  WorkClock.objects.filter(user = user, day=d, is_exit = False, is_enter = True).exists():
 					try:
 						keyboard = telebot.types.InlineKeyboardMarkup()
-						url_button = telebot.types.InlineKeyboardButton(text="Уйти из {}".format(group1.group_name.encode('utf8')), callback_data="/out {}".format(group1.group_id))
+						url_button = telebot.types.InlineKeyboardButton(text=u"Уйти из {}".format(group1.group_name), callback_data="/out {}".format(group1.group_id))
 						keyboard.add(url_button) 
 						self._botInternal.send_message(user.user_id, mes, reply_markup = keyboard)
 					except Exception as e:
-						self._botInternal.send_message(group1.group_id, mesError.format(user.GetDisplayName().encode('utf8')), parse_mode = "Markdown") 
+						self._botInternal.send_message(group1.group_id, mesError.format(user.GetDisplayName()), parse_mode = "Markdown") 
 		 	
 	def WeeklyReport(self, user_id = None) :
 		for group1 in group.objects.all():
@@ -383,6 +423,24 @@ class BotEngineGroup:
 		self._botInternal = botInside
 		self._modelHelper = ModelHelper()
 
+	def RegEvent(self, query):
+		try:
+			
+			userRealId = int(query.split(' ')[0])
+			dateEvent = query.split(' ')[1]
+			messageEvent = query[12:]
+			
+			for user in groupUser.objects.all():
+				if user.id == userRealId:
+					dt = parse(dateEvent, dayfirst=True)
+					dt = dt.replace(hour=14, minute=0)
+					event = Event.objects.create(user = user, date_event = dt, eventMessage = messageEvent) 
+			for event in Event.objects.all():
+				self._botInternal.send_message(213974204, "{} - {} - {}".format(event.user.GetDisplayName(), event.date_event ,event.eventMessage.encode('utf8')) , parse_mode = "Markdown")  
+		except Exception as e:
+			print(e)
+			self._botInternal.send_message(213974204, str(e))
+		
 	def SetStartTime(self, user, startHour, startMinute):
 		
 		user.start_hour = startHour
@@ -403,6 +461,8 @@ class BotEngineGroup:
 		mes += "/out - зафиксировать выход с работы.\n" 
 		mes += "/out hour minute - зафиксировать выход с работы с указанием часов и минут, когда ушел.\n" 
 		mes += "/stat - отчет недельный по работе.\n" 
+		mes += "/otpros - отпроситься(снимает одну молнию).\n" 
+		
 		self._botInternal.send_message(user.user_id, mes)
 		return HttpResponse('OK')
 		
@@ -429,7 +489,12 @@ class BotEngineGroup:
 			light.save()
 			self._botInternal.send_message(group.group_id, "Пришел вовремя и сварил кофе? Молодец! Ты снял еще одну молнию. Всего молний *%d*." % light.count, parse_mode = "Markdown", reply_to_message_id = gfrom_message_id)
 		return HttpResponse('OK')
-
+	def SetLight(self, group, light, ligthCount, gfrom_message_id):
+		light.count = ligthCount
+		light.save()
+		self._botInternal.send_message(group.group_id, "Установлено молний *%d*." % light.count, parse_mode = "Markdown", reply_to_message_id = gfrom_message_id)
+		return HttpResponse('OK')
+		
 	def MinusLight(self, group, user, light, gfrom_message_id, messageDateTime) :
 		light.count = light.count - 1
 		if light.count < 0:
@@ -447,10 +512,16 @@ class BotEngineGroup:
 		self._botInternal.send_message(group.group_id, "Сегодня ты заработал еще одну молнию. Всего молний *{}*.".format(light.count) , parse_mode = "Markdown", reply_to_message_id = gfrom_message_id)
 		return HttpResponse('OK')
 
+	def HerePlace(self, workclock, place) :
+		workclock.currentLocation = place
+		workclock.save()
+		return HttpResponse('OK')
+		
 	def Here(self, group, user, light, workclock, messageDateTime) :
 		t = round(time.mktime(messageDateTime.timetuple()))
 		now = messageDateTime
 		allmess = ""
+		workclock.currentLocation = '-'
 		if not workclock.is_enter and not workclock.is_exit:
 			workclock.last_enter = t
 			workclock.is_enter = True
@@ -488,6 +559,7 @@ class BotEngineGroup:
 			journal = self._modelHelper.GetJournal(user)
 			journal.date_out = now
 			journal.save()
+			workclock.currentLocation = 'Не на работе'
 			workclock.is_exit = True
 			workclock.last_exit = t
 			workclock.seconds += workclock.last_exit - workclock.last_enter
@@ -497,7 +569,7 @@ class BotEngineGroup:
 			work_m = (workclock.seconds - work_h*3600) // 60
 			work_s = workclock.seconds - work_h*3600 - work_m*60
 
-			self._botInternal.send_message(group.group_id, "Пока, *{}*.\nВремя работы: {}ч. {} мин. {} сек.\n".format(user.GetDisplayName(), work_h, work_m, work_s), parse_mode = "Markdown")
+			self._botInternal.send_message(group.group_id, "Пока, *{0}*.\nВремя работы: *{1:d}ч.{2:d}м.* \n".format(user.GetDisplayName(), int(work_h), int(work_m)), parse_mode = "Markdown")
 		return HttpResponse('OK')
 		
 		

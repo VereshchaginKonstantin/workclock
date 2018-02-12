@@ -51,7 +51,7 @@ class groupUser(models.Model):
 class WorkClock(models.Model):
 	day	 			= models.DateField(null=True, blank = True)
 	user 			= models.ForeignKey(groupUser, null=True, blank = True)
-
+	currentLocation = models.CharField(max_length=120, null=True, blank = True)
 	is_enter		= models.BooleanField(default = False)
 	is_exit			= models.BooleanField(default = False)
 	last_enter 		= models.BigIntegerField(null=True, blank = True)
@@ -83,3 +83,22 @@ class Journal(models.Model):
 	class Meta:
 		verbose_name 		= 'Journal'
 		verbose_name_plural = 'Journal'
+		
+	
+class Event(models.Model):
+	user = models.ForeignKey(groupUser, null=True, blank = True)
+	date_event = models.DateTimeField(null=True, blank = True)
+	eventMessage = models.CharField(max_length=220, null=True, blank = True)
+	
+	class Meta:
+		verbose_name 		= 'Event'
+		verbose_name_plural = 'Event'
+		
+class EventStage(models.Model):
+	message_id	= models.BigIntegerField()
+	messageState = models.BigIntegerField()
+	event = models.ForeignKey(Event, null=True, blank = True)
+	 
+	class Meta:
+		verbose_name 		= 'EventStage'
+		verbose_name_plural = 'EventStage'

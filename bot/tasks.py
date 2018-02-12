@@ -17,6 +17,19 @@ import re
 from django.db.models import Count, Min, Sum, Avg
 from . groupLogic import *
 
+
+@periodic_task(run_every=crontab(minute='2', hour='12,18'))
+def every_hour_sendEvents():
+	try:
+		bot = telebot.TeleBot('475168535:AAGBZZCxRdoDvsqjk0nXOy1gprdQHgyuUmo') #prod
+		helper = DataHelper()
+		report = Reports()
+		report.SetBot(bot) 
+		report.SendEvent()
+	except Exception as e:
+		print(e)
+		bot.send_message(213974204, str(e))
+
 @periodic_task(run_every=crontab(minute='0'))
 def every_hour_sendLight():
 	try:
@@ -59,7 +72,7 @@ def every_hour_sendOverWork():
 		now = helper.GetNow()
 		bot = telebot.TeleBot('475168535:AAGBZZCxRdoDvsqjk0nXOy1gprdQHgyuUmo') #prod
 		
-		if now.hour > 17: 
+		if now.hour == 18: 
 			report = Reports()
 			report.SetBot(bot) 
 			report.OverWorkingPrivate()

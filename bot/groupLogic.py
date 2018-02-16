@@ -385,9 +385,12 @@ class Reports:
 		d = timezone.now().date()  
 		mes = " "
 		for user in groupUser.objects.filter(group=group):
-			if  WorkClock.objects.filter(user = user, day=d, is_exit = False, is_enter = True).exists():
-				place = WorkClock.objects.filter(user = user, day=d, is_exit = False, is_enter = True).first().currentLocation
-				mes += "*{}*, находится *{}* \n".format(user.GetDisplayName(), place.encode('utf8'))
+			if  WorkClock.objects.filter(user = user, day=d).exists():
+    			#workclockObject = WorkClock()
+				workclockObject = WorkClock.objects.filter(user = user, day=d).first()
+				mes += "*{}*, находится *{}* \n".format(user.GetDisplayName(), workclockObject.currentLocation.encode('utf8'))
+			else:
+				mes += "*{}*, не отмечался сегодня, хотя не в отпуске. \n".format(user.GetDisplayName())    				
 		try:
 			if mes == " ":
 				self._botInternal.send_message(group.group_id, 'Никого нет', parse_mode = "Markdown")
@@ -449,6 +452,16 @@ class BotEngineGroup:
 		self._botInternal.send_message(user.group.group_id, "Для *{}* установлено время начало работы {}:{}.".format(user.GetDisplayName(), startHour, startMinute), parse_mode = "Markdown")
 		return HttpResponse('OK')
 		
+			
+	def SetOtpusk(self, user, isOtpusk):	
+		user.isOtpusk = isOtpusk
+		user.save()
+		if isOtpusk:
+			self._botInternal.send_message(user.group.group_id, "*{}* ушел в отпуск.".format(user.GetDisplayName()), parse_mode = "Markdown")
+		else:
+			self._botInternal.send_message(user.group.group_id, "*{}* вернулся из отпуска.".format(user.GetDisplayName()), parse_mode = "Markdown")
+		return HttpResponse('OK')
+
 	def Help(self, user) :
 		mes = ''
 		mes += "/det - детальный план.\n"
@@ -532,15 +545,13 @@ class BotEngineGroup:
 			
 			allmess += "На месте, *{}*.".format(user.GetDisplayName())
 			if (now.hour == user.start_hour and now.minute >= user.start_minute) or (now.hour > user.start_hour):
-				light.count = light.count + 1
-				light.save()
 				allmess += " + молния. *{}*.".format(light.count)
 			else:
 				light.count = light.count - 1
 				if light.count < 0:
 					light.count = 0
 				light.save()
-				allmess += " - молния. *{}*.".format(light.count)
+				allmess += " - молния. Если хотите снимать молнии, отмечайтесь вовремя! :p *{}*.".format(light.count)
 		elif workclock.is_exit:
 			workclock.last_enter = t
 			workclock.is_exit = False

@@ -16,7 +16,19 @@ from django.utils.translation import activate
 import re
 from django.db.models import Count, Min, Sum, Avg
 from . groupLogic import *
+from . lightLogic import *
 
+@periodic_task(run_every=crontab(minute='2, 32'))
+def SetLightToLatestPeople():
+	try:
+		bot = telebot.TeleBot('475168535:AAGBZZCxRdoDvsqjk0nXOy1gprdQHgyuUmo') #prod
+		helper = DataHelper()
+		light = LightEngine()
+		light.SetBot(bot) 
+		light.SetLightsAndSendButton()
+	except Exception as e:
+		print(e)
+		bot.send_message(213974204, str(e))
 
 @periodic_task(run_every=crontab(minute='2', hour='12,18'))
 def every_hour_sendEvents():

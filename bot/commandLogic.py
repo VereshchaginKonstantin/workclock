@@ -32,6 +32,12 @@ def ProcessCommand(botengine, report, workclock, user, group, gtext, light, gfro
 	elif gtext.lower() == "/news":			
 		return HttpResponse('OK')
  
+	elif gtext.startswith('/otpusk'): 
+		return botengine.SetOtpusk(user, True)
+
+	elif gtext.startswith('/work'): 
+		return botengine.SetOtpusk(user, False)
+
 	elif gtext.lower() == "/destroy":
 		modelHelper.Clear(user)
 		return HttpResponse('OK')

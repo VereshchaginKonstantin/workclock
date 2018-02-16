@@ -15,6 +15,7 @@ class group(models.Model):
 
 class groupUser(models.Model):
 	user_id 		= models.BigIntegerField()
+	isOtpusk 		= models.BooleanField(default = False)
 	start_hour = models.IntegerField(default = 9)
 	start_minute = models.IntegerField(default = 0)
 	group 			= models.ForeignKey(group, null=True, blank = True) 

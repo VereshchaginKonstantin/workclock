@@ -25,7 +25,15 @@ from django.db.models import Count, Min, Sum, Avg
 from django.utils import timezone  
 import locale 
 from dateutil.parser import parse
- 
+import urllib.request
+
+
+def IsWorkingDay():
+    	dataHelper = DataHelper()
+    	dataInFormat = "{:%Y%m%d}".format(dataHelper.GetNow())
+    	answer = urllib.request.urlopen("https://isdayoff.ru/{0}?cc=ru".format(dataInFormat)).read()
+		return answer == '0';
+
 def IsUserBot(user):
 	return user.GetDisplayName() == 'WorkingStatisticBot'
 

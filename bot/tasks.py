@@ -21,11 +21,12 @@ from . lightLogic import *
 @periodic_task(run_every=crontab(minute='2, 32'))
 def SetLightToLatestPeople():
 	try:
-		bot = telebot.TeleBot('475168535:AAGBZZCxRdoDvsqjk0nXOy1gprdQHgyuUmo') #prod
-		helper = DataHelper()
-		light = LightEngine()
-		light.SetBot(bot) 
-		light.SetLightsAndSendButton()
+		if IsWorkingDay():
+			bot = telebot.TeleBot('475168535:AAGBZZCxRdoDvsqjk0nXOy1gprdQHgyuUmo') #prod
+			helper = DataHelper()
+			light = LightEngine()
+			light.SetBot(bot) 
+			light.SetLightsAndSendButton()
 	except Exception as e:
 		print(e)
 		bot.send_message(213974204, str(e))
@@ -52,7 +53,7 @@ def every_hour_sendLight():
 		
 		dweek = now.weekday() 
 		bot.send_message(213974204, dweek)
-		if now.hour == 9 and dweek < 5:		
+		if now.hour == 9 and IsWorkingDay():		
 			report = Reports()
 			report.SetBot(bot) 
 			report.SendLight()
@@ -69,7 +70,7 @@ def every_hour_SendLightPrivate():
 		now = helper.GetNow()
 		
 		dweek = now.weekday()
-		if now.hour == 8 and dweek < 5:		
+		if now.hour == 8 and IsWorkingDay():		
 			report = Reports()
 			report.SetBot(bot) 
 			report.SendLightPrivate()

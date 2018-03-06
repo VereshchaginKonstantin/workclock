@@ -25,7 +25,7 @@ from django.db.models import Count, Min, Sum, Avg
 from django.utils import timezone  
 import locale 
 from dateutil.parser import parse
-from groupLogic import *
+from . groupLogic import *
 
 
 class ReportLights(object):
@@ -34,27 +34,33 @@ class ReportLights(object):
 	pass
 
 class LightEngine:
-    	_botInternal = 0
+	_botInternal = 0
 	def SetBot(self,  botInside) :
 		self._botInternal = botInside
 			
 	def SetLightsAndSendButton(self):
-    	helper = DataHelper()
+		helper = DataHelper()
 		now = helper.GetNow()
 		modelHelper = ModelHelper()
 		
-	 	for group1 in group.objects.all():
-    		reportArray = []
+		for group1 in group.objects.all():
+			reportArray = []
 			for user1 in groupUser.objects.filter(group = group1):
-    			light = modelHelper.GetLightningByUser(user1)
-				if (now.hour == user1.start_hour and now.minute >= user1.start_minute):
-    				light.count = light.count + 1
-					light.save()
-					reportLights = ReportLights()
-					reportLights.user = user1
-					reportLights.lights = light.count
-					reportArray.append(reportLights)
-			this.SendMessage(reportArray, group1)
+				if not user1.IsBot() and not user1.isOtpusk:
+					light = modelHelper.GetLightningByUser(user1)
+					workclockObj = modelHelper.GetWorkClock(user1)
+					if not workclockObj.is_enter and not workclockObj.light_setted and (now.hour == user1.start_hour and now.minute >= user1.start_minute):
+
+						workclockObj.light_setted = True						
+						workclockObj.save()
+						light.count = light.count + 1
+						light.save()
+						reportLights = ReportLights()
+						reportLights.user = user1
+						reportLights.lights = light.count
+						reportArray.append(reportLights)
+			if len(reportArray) > 0:
+				self.SendMessage(reportArray, group1)
 
 	def SendMessage(self,reportArray, group):		 
 		mes = "*\n ******** *\n *На текущий момент опоздали:*\n"

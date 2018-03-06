@@ -25,14 +25,14 @@ from django.db.models import Count, Min, Sum, Avg
 from django.utils import timezone  
 import locale 
 from dateutil.parser import parse
-import urllib.request
+import urllib
 
 
 def IsWorkingDay():
-    	dataHelper = DataHelper()
-    	dataInFormat = "{:%Y%m%d}".format(dataHelper.GetNow())
-    	answer = urllib.request.urlopen("https://isdayoff.ru/{0}?cc=ru".format(dataInFormat)).read()
-		return answer == '0';
+	dataHelper = DataHelper()
+	dataInFormat = "{:%Y%m%d}".format(dataHelper.GetNow())
+	answer = urllib.urlopen("https://isdayoff.ru/{0}?cc=ru".format(dataInFormat)).read()
+	return answer == '0'
 
 def IsUserBot(user):
 	return user.GetDisplayName() == 'WorkingStatisticBot'
@@ -174,6 +174,14 @@ class Reports:
 	_botInternal = 0
 	def SetBot(self,  botInside) :
 		self._botInternal = botInside 
+
+	def IsWorkingDay(self, user):
+		if IsWorkingDay():
+			self._botInternal.send_message(user.user_id, u'Working Day!')
+		else:
+			self._botInternal.send_message(user.user_id, u'Holliday!')
+
+
 	
 	def Test(self, user_id):
 		self.SendLight(user_id)
@@ -203,7 +211,7 @@ class Reports:
 			dateEvent = event.date_event.replace(year = yearNow)
 			tdelta = dateEvent - d
 			daysRest = tdelta.days
-			if daysRest == 1 or daysRest == 8:
+			if daysRest == 3 or daysRest == 7 or daysRest == 14:
 				for user in groupUser.objects.all():
 					if user.group == event.user.group:
 						if user != event.user:
@@ -393,12 +401,15 @@ class Reports:
 		d = timezone.now().date()  
 		mes = " "
 		for user in groupUser.objects.filter(group=group):
-			if  WorkClock.objects.filter(user = user, day=d).exists():
-    			#workclockObject = WorkClock()
-				workclockObject = WorkClock.objects.filter(user = user, day=d).first()
-				mes += "*{}*, находится *{}* \n".format(user.GetDisplayName(), workclockObject.currentLocation.encode('utf8'))
+			if  WorkClock.objects.filter(user = user, day=d, is_exit = False, is_enter = True).exists():
+#    			workclockObject = WorkClock()
+				place = WorkClock.objects.filter(user = user, day=d, is_exit = False, is_enter = True).first().currentLocation
+				mes += "*{}*, находится *{}* \n".format(user.GetDisplayName(), place.encode('utf8'))
 			else:
-				mes += "*{}*, не отмечался сегодня, хотя не в отпуске. \n".format(user.GetDisplayName())    				
+				if WorkClock.objects.filter(user = user, day=d).exists():
+					workclock = WorkClock.objects.filter(user = user, day=d).first()
+					if not user.isOtpusk and not IsUserBot(user) and not workclock.is_enter:
+						mes += "*{}*, не отмечался сегодня, хотя не в отпуске. \n".format(user.GetDisplayName())
 		try:
 			if mes == " ":
 				self._botInternal.send_message(group.group_id, 'Никого нет', parse_mode = "Markdown")
@@ -553,13 +564,18 @@ class BotEngineGroup:
 			
 			allmess += "На месте, *{}*.".format(user.GetDisplayName())
 			if (now.hour == user.start_hour and now.minute >= user.start_minute) or (now.hour > user.start_hour):
-				allmess += " + молния. *{}*.".format(light.count)
+				if not workclock.light_setted:
+					light.count = light.count + 1
+					workclock.light_setted = True
+				allmess += " Ну вот, опять опаздываем :( *{}*.".format(light.count)
 			else:
+				if workclock.light_setted:
+					light.count = light.count - 1
 				light.count = light.count - 1
 				if light.count < 0:
 					light.count = 0
 				light.save()
-				allmess += " - молния. Если хотите снимать молнии, отмечайтесь вовремя! :p *{}*.".format(light.count)
+				allmess += " Минус молния.  *{}*.".format(light.count)
 		elif workclock.is_exit:
 			workclock.last_enter = t
 			workclock.is_exit = False

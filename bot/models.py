@@ -50,6 +50,7 @@ class groupUser(models.Model):
 
 
 class WorkClock(models.Model):
+	light_setted = models.BooleanField(default = False)
 	day	 			= models.DateField(null=True, blank = True)
 	user 			= models.ForeignKey(groupUser, null=True, blank = True)
 	currentLocation = models.CharField(max_length=120, null=True, blank = True)

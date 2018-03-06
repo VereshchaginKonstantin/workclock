@@ -41,7 +41,13 @@ def ProcessCommand(botengine, report, workclock, user, group, gtext, light, gfro
 	elif gtext.lower() == "/destroy":
 		modelHelper.Clear(user)
 		return HttpResponse('OK')
-		
+
+
+	elif gtext.lower() == "/isworkingday":
+		report.IsWorkingDay(user)
+		return HttpResponse('OK')
+	
+
 	elif gtext.lower() == "/det":
 		report.StatJournal(group, user)
 		return HttpResponse('OK')	
